@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #efe4d3;
   --foreground: #171717;
 }
 
@@ -12,15 +12,78 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Same beige-white in light and dark OS preference so the canvas doesn’t jump to gray. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #efe4d3;
+    --foreground: #171717;
   }
 }
 
+html {
+  background-color: var(--background);
+}
+
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.ripple-char-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@keyframes ripple-expand {
+  0% {
+    transform: translate(-50%, -50%) scale(0.1);
+    opacity: 0.72;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.8);
+    opacity: 0;
+  }
+}
+
+.ripple-circle {
+  position: fixed;
+  border-radius: 9999px;
+  border: 2px solid color-mix(in oklab, #6366f1 46%, #22d3ee 54%);
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, #ffffff 62%, #22d3ee 38%) 0%,
+    color-mix(in oklab, #ffffff 75%, #818cf8 25%) 35%,
+    color-mix(in oklab, #ffffff 90%, #a78bfa 10%) 58%,
+    transparent 74%
+  );
+  mix-blend-mode: screen;
+  filter: saturate(1.25) contrast(1.1) brightness(1.08);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, #6366f1 35%, transparent),
+    0 0 36px color-mix(in oklab, #22d3ee 45%, transparent);
+  animation: ripple-expand 1.25s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+/* Pretext demo: animated column width → ResizeObserver → relayout */
+@keyframes pretext-column-breathe {
+  0%,
+  100% {
+    width: 66%;
+  }
+  50% {
+    width: 100%;
+  }
+}
+
+.pretext-live-column--breathe {
+  animation: pretext-column-breathe 12s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pretext-live-column--breathe {
+    animation: none;
+    width: 100%;
+  }
 }
