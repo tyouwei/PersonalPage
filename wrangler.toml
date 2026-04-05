@@ -1,0 +1,13 @@
+# Static Next.js export: `next build` writes HTML/JS/CSS to `out/`.
+#
+# Cloudflare Dashboard (this repo → Settings → Builds & deployments):
+#   - Framework preset: None  (do NOT use the full-stack "Next.js" / Workers preset)
+#   - Build command: npm run build
+#   - Build output directory: out
+#   - Deploy command: leave EMPTY  (remove `npx wrangler deploy` — that runs OpenNext and fails with output: "export")
+#
+# Rename `name` below to match your Pages project slug (Workers & Pages → your project).
+
+name = "thamyouwei-page"
+compatibility_date = "2025-04-05"
+pages_build_output_dir = "out"
