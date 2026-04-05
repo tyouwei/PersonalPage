@@ -106,10 +106,10 @@ class RippleField {
         const index = this.index(column, row);
         const height = this.heights[index];
         const average =
-          (this.heightAt(column - 1, row) +
-            this.heightAt(column + 1, row) +
-            this.heightAt(column, row - 1) +
-            this.heightAt(column, row + 1)) *
+          (this.neighborHeightForWave(column - 1, row) +
+            this.neighborHeightForWave(column + 1, row) +
+            this.neighborHeightForWave(column, row - 1) +
+            this.neighborHeightForWave(column, row + 1)) *
           0.25;
 
         let velocity = this.velocities[index];
@@ -119,8 +119,64 @@ class RippleField {
         this.nextHeights[index] = height + velocity;
       }
     }
+
+    // Pull energy out of the outer ring so waves don’t hard-reflect off the grid edge.
+    const edgeDamp = 0.88;
+    const lastCol = this.columns - 1;
+    const lastRow = this.rows - 1;
+    for (let column = 0; column < this.columns; column += 1) {
+      this.dampEdgeCell(column, 0, edgeDamp);
+      this.dampEdgeCell(column, lastRow, edgeDamp);
+    }
+    for (let row = 1; row < lastRow; row += 1) {
+      this.dampEdgeCell(0, row, edgeDamp);
+      this.dampEdgeCell(lastCol, row, edgeDamp);
+    }
+
     [this.heights, this.nextHeights] = [this.nextHeights, this.heights];
     [this.velocities, this.nextVelocities] = [this.nextVelocities, this.velocities];
+  }
+
+  private dampEdgeCell(column: number, row: number, factor: number) {
+    const i = this.index(column, row);
+    this.nextHeights[i] *= factor;
+    this.nextVelocities[i] *= factor;
+  }
+
+  /**
+   * Ghost-cell heights via one-sided linear extrapolation (not clamp-to-edge), so the
+   * discrete wave doesn’t mirror at boundaries like a perfect reflector.
+   */
+  private neighborHeightForWave(column: number, row: number): number {
+    if (column >= 0 && column < this.columns && row >= 0 && row < this.rows) {
+      return this.heights[this.index(column, row)];
+    }
+
+    const r0 = clamp(row, 0, this.rows - 1);
+    const c0 = clamp(column, 0, this.columns - 1);
+    const h0 = this.heights[this.index(c0, r0)];
+
+    if (column < 0) {
+      if (this.columns < 2) return h0;
+      const h1 = this.heights[this.index(1, r0)];
+      return 2 * h0 - h1;
+    }
+    if (column >= this.columns) {
+      if (this.columns < 2) return h0;
+      const c1 = this.columns - 2;
+      return 2 * h0 - this.heights[this.index(c1, r0)];
+    }
+    if (row < 0) {
+      if (this.rows < 2) return h0;
+      const h1 = this.heights[this.index(c0, 1)];
+      return 2 * h0 - h1;
+    }
+    if (row >= this.rows) {
+      if (this.rows < 2) return h0;
+      const r1 = this.rows - 2;
+      return 2 * h0 - this.heights[this.index(c0, r1)];
+    }
+    return h0;
   }
 
   gradientAt(x: number, y: number) {
@@ -154,12 +210,6 @@ class RippleField {
     const top = lerp(h00, h10, tx);
     const bottom = lerp(h01, h11, tx);
     return lerp(top, bottom, ty);
-  }
-
-  private heightAt(column: number, row: number) {
-    const clampedColumn = clamp(Math.round(column), 0, this.columns - 1);
-    const clampedRow = clamp(Math.round(row), 0, this.rows - 1);
-    return this.heights[this.index(clampedColumn, clampedRow)];
   }
 
   private index(column: number, row: number) {
