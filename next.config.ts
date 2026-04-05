@@ -7,6 +7,8 @@ import { fileURLToPath } from "url";
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
+  /** Emit a fully static site to `out/` (HTML/CSS/JS). Host with any static server or GitHub Pages. */
+  output: "export",
   turbopack: {
     root: appDir,
   },
