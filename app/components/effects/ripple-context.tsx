@@ -218,8 +218,8 @@ class RippleField {
 }
 
 export function RippleProvider({ children }: { children: ReactNode }) {
-  const [rippleEffectEnabled, setRippleEffectEnabledState] = useState(true);
-  const rippleEnabledRef = useRef(true);
+  const [rippleEffectEnabled, setRippleEffectEnabledState] = useState(false);
+  const rippleEnabledRef = useRef(false);
   rippleEnabledRef.current = rippleEffectEnabled;
 
   const fieldRef = useRef<RippleField | null>(null);
@@ -229,7 +229,7 @@ export function RippleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(RIPPLE_STORAGE_KEY);
-      if (stored === "0") setRippleEffectEnabledState(false);
+      if (stored === "1") setRippleEffectEnabledState(true);
     } catch {
       /* ignore */
     }

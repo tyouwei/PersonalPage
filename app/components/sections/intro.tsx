@@ -14,7 +14,7 @@ const PORTFOLIO_TEXT = [
 const PORTFOLIO_NOTE = [
   "Side-note: I admittedly finally only started on this portfolio recently just to play around with the pretext library recently developed by Cheng Lou.", 
   "Huge shoutout to him for revolutionizing the way we build text-based interfaces!",
-  "Try clicking and dragging around the page to see the ripple effect!"
+  "Try toggling on the ripple effect by clicking the button below! You can click or mouse drag around the page to see it in action!"
 ].join(" ");
 
 export default function Intro() {
