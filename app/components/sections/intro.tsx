@@ -14,8 +14,9 @@ const PORTFOLIO_TEXT = [
 const PORTFOLIO_NOTE = [
   "Side-note: I admittedly finally only started on this portfolio recently just to play around with the pretext library recently developed by Cheng Lou.", 
   "Huge shoutout to him for revolutionizing the way we build text-based interfaces!",
-  "Try toggling on the ripple effect by clicking the button below! You can click or mouse drag around the page to see it in action!"
 ].join(" ");
+
+const RIPPLE_HINT = "Try toggling on the ripple effect by clicking the button below! You can click or mouse drag around the page to see it in action!";
 
 export default function Intro() {
   return (
@@ -42,6 +43,11 @@ export default function Intro() {
           <RippleCharText
             text={PORTFOLIO_NOTE}
             className="text-sm leading-relaxed text-zinc-700"
+          />
+          <br />
+          <RippleCharText
+            text={RIPPLE_HINT}
+            className="text-sm font-semibold leading-relaxed text-zinc-700"
           />
         </div>
 
