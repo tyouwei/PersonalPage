@@ -1,4 +1,5 @@
 import RippleCharText from "../effects/ripple-char-text";
+import SectionFooterWithRipple from "../effects/section-footer-with-ripple";
 
 const CAREER_ITEMS = [
   {
@@ -22,6 +23,20 @@ const CAREER_ITEMS = [
     details:
       "Helped with the development of the TOM Project (The Other Me) which is a Augmented Reality project that allows users to interact with their surroundings and query a general AI assistant in real time.",
   },
+  {
+    title: "Data Interoperability Intern",
+    company: "SNDGO",
+    period: "2023 - 2024",
+    details:
+      "Worked on a feasibility study and investigation for implementing NGSI-LD Protocol in Singapore Smart Buildings.",
+  },
+  {
+    title: "Sales Engineer Intern",
+    company: "Bosch Rexroth",
+    period: "2019 - 2020",
+    details:
+      "Helped out with the integration and configuration of Bosch Rexroth products and solutions in internal and customer sites.",
+  }
 ];
 
 export default function Career() {
@@ -39,6 +54,10 @@ export default function Career() {
           text="Experience and impact over the years."
           className="text-3xl font-semibold tracking-tight text-zinc-900 sm:text-4xl"
         />
+        <RippleCharText
+          text="Only my major work experiences are listed here."
+          className="text-base font-normal leading-relaxed text-zinc-600"
+        />
 
         <div className="grid gap-4 md:grid-cols-3">
           {CAREER_ITEMS.map((item) => (
@@ -46,9 +65,10 @@ export default function Career() {
               key={`${item.company}-${item.period}`}
               className="rounded-2xl border border-zinc-300 bg-white/70 p-5"
             >
-              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                {item.period}
-              </p>
+              <RippleCharText
+                text={item.period}
+                className="text-xs font-semibold uppercase tracking-wide text-zinc-500"
+              />
               <RippleCharText
                 text={item.title}
                 className="mt-2 text-base font-semibold text-zinc-900"
@@ -65,14 +85,20 @@ export default function Career() {
           ))}
         </div>
 
-        <div>
+        <SectionFooterWithRipple>
           <a
-            href="#intro"
+            href="#pet-projects"
+            className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
+          >
+            My Pet Projects
+          </a>
+          <a
+            href="#skills"
             className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
           >
-            Back To Intro
+            Back to Technical skills
           </a>
-        </div>
+        </SectionFooterWithRipple>
       </div>
     </section>
   );

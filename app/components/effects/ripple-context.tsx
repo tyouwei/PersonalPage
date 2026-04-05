@@ -11,7 +11,8 @@ import {
   type ReactNode,
 } from "react";
 
-export const RIPPLE_DURATION_MS = 1500;
+export const RIPPLE_STORAGE_KEY = "portfolio-ripple-enabled";
+
 const FIELD_CELL_SIZE = 18;
 const RIPPLE_SPEED = 0.3;
 const FIXED_TIME_STEP = 1 / 60;
@@ -26,16 +27,9 @@ const SPRING_STRENGTH = 7;
 const MOTION_DAMPING = 11;
 const RIPPLE_FORCE = 28500;
 
-export type RippleInstance = {
-  id: number;
-  x: number;
-  y: number;
-  startTime: number;
-  size: number;
-};
-
 type Value = {
-  ripples: RippleInstance[];
+  rippleEffectEnabled: boolean;
+  setRippleEffectEnabled: (enabled: boolean) => void;
   addRipple: (x: number, y: number) => void;
   addDragRippleTrail: (fromX: number, fromY: number, toX: number, toY: number) => void;
   gradientAt: (x: number, y: number) => { x: number; y: number };
@@ -174,11 +168,31 @@ class RippleField {
 }
 
 export function RippleProvider({ children }: { children: ReactNode }) {
-  const [ripples, setRipples] = useState<RippleInstance[]>([]);
-  const idRef = useRef(0);
+  const [rippleEffectEnabled, setRippleEffectEnabledState] = useState(true);
+  const rippleEnabledRef = useRef(true);
+  rippleEnabledRef.current = rippleEffectEnabled;
+
   const fieldRef = useRef<RippleField | null>(null);
   const previousTimeRef = useRef(0);
   const accumulatedTimeRef = useRef(0);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(RIPPLE_STORAGE_KEY);
+      if (stored === "0") setRippleEffectEnabledState(false);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const setRippleEffectEnabled = useCallback((enabled: boolean) => {
+    setRippleEffectEnabledState(enabled);
+    try {
+      localStorage.setItem(RIPPLE_STORAGE_KEY, enabled ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     fieldRef.current = new RippleField(window.innerWidth, window.innerHeight, FIELD_CELL_SIZE);
@@ -193,11 +207,15 @@ export function RippleProvider({ children }: { children: ReactNode }) {
       previousTimeRef.current = time;
       accumulatedTimeRef.current += Math.min(dt, MAX_FRAME_DELTA);
 
-      let steps = 0;
-      while (accumulatedTimeRef.current >= FIXED_TIME_STEP && steps < MAX_SUBSTEPS) {
-        fieldRef.current?.step();
-        accumulatedTimeRef.current -= FIXED_TIME_STEP;
-        steps += 1;
+      if (rippleEnabledRef.current) {
+        let steps = 0;
+        while (accumulatedTimeRef.current >= FIXED_TIME_STEP && steps < MAX_SUBSTEPS) {
+          fieldRef.current?.step();
+          accumulatedTimeRef.current -= FIXED_TIME_STEP;
+          steps += 1;
+        }
+      } else {
+        accumulatedTimeRef.current = 0;
       }
 
       raf = requestAnimationFrame(frame);
@@ -211,20 +229,12 @@ export function RippleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addRipple = useCallback((x: number, y: number) => {
-    const id = ++idRef.current;
-    const startTime = performance.now();
-    const size =
-      typeof window !== "undefined"
-        ? Math.max(window.innerWidth, window.innerHeight) * 0.4
-        : 320;
-    setRipples((prev) => [...prev, { id, x, y, startTime, size }]);
+    if (!rippleEnabledRef.current) return;
     fieldRef.current?.disturb(x, y, DROP_RADIUS, DROP_STRENGTH);
-    window.setTimeout(() => {
-      setRipples((prev) => prev.filter((r) => r.id !== id));
-    }, RIPPLE_DURATION_MS);
   }, []);
 
   const addDragRippleTrail = useCallback((fromX: number, fromY: number, toX: number, toY: number) => {
+    if (!rippleEnabledRef.current) return;
     const distance = Math.hypot(toX - fromX, toY - fromY);
     if (distance < DRAG_MIN_DISTANCE) return;
     const steps = Math.max(1, Math.ceil(distance / DRAG_MIN_DISTANCE));
@@ -236,13 +246,72 @@ export function RippleProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const gradientAt = useCallback((x: number, y: number) => {
-    return fieldRef.current?.gradientAt(x, y) ?? { x: 0, y: 0 };
-  }, []);
+  useEffect(() => {
+    let drawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let lastStamp = 0;
+    const MIN_DIST_PX = 26;
+    const MIN_INTERVAL_MS = 34;
 
-  const surfaceHeightAt = useCallback((x: number, y: number) => {
-    return fieldRef.current?.surfaceHeightAt(x, y) ?? 0;
-  }, []);
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      drawing = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      lastStamp = performance.now();
+      addRipple(e.clientX, e.clientY);
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!drawing) return;
+      const now = performance.now();
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      const dist = Math.hypot(dx, dy);
+      if (dist < MIN_DIST_PX && now - lastStamp < MIN_INTERVAL_MS) return;
+
+      addDragRippleTrail(lastX, lastY, e.clientX, e.clientY);
+      lastX = e.clientX;
+      lastY = e.clientY;
+      lastStamp = now;
+      addRipple(e.clientX, e.clientY);
+    };
+
+    const stopDrawing = () => {
+      drawing = false;
+    };
+
+    window.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("pointerup", stopDrawing);
+    window.addEventListener("pointercancel", stopDrawing);
+    window.addEventListener("blur", stopDrawing);
+
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", stopDrawing);
+      window.removeEventListener("pointercancel", stopDrawing);
+      window.removeEventListener("blur", stopDrawing);
+    };
+  }, [addRipple, addDragRippleTrail]);
+
+  const gradientAt = useCallback(
+    (x: number, y: number) => {
+      if (!rippleEffectEnabled) return { x: 0, y: 0 };
+      return fieldRef.current?.gradientAt(x, y) ?? { x: 0, y: 0 };
+    },
+    [rippleEffectEnabled],
+  );
+
+  const surfaceHeightAt = useCallback(
+    (x: number, y: number) => {
+      if (!rippleEffectEnabled) return 0;
+      return fieldRef.current?.surfaceHeightAt(x, y) ?? 0;
+    },
+    [rippleEffectEnabled],
+  );
 
   const physics = useMemo(
     () => ({
@@ -255,14 +324,23 @@ export function RippleProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
-      ripples,
+      rippleEffectEnabled,
+      setRippleEffectEnabled,
       addRipple,
       addDragRippleTrail,
       gradientAt,
       surfaceHeightAt,
       physics,
     }),
-    [ripples, addRipple, addDragRippleTrail, gradientAt, surfaceHeightAt, physics],
+    [
+      rippleEffectEnabled,
+      setRippleEffectEnabled,
+      addRipple,
+      addDragRippleTrail,
+      gradientAt,
+      surfaceHeightAt,
+      physics,
+    ],
   );
 
   return <RippleContext.Provider value={value}>{children}</RippleContext.Provider>;
@@ -272,12 +350,4 @@ export function useRippleContext() {
   const ctx = useContext(RippleContext);
   if (!ctx) throw new Error("RippleProvider required");
   return ctx;
-}
-
-/** Matches `.ripple-circle`: transform scale 0.1 → 2.2, cubic ease-out over RIPPLE_DURATION_MS. */
-export function ringRadiusAtTime(startTime: number, now: number, size: number) {
-  const t = Math.min(1, (now - startTime) / RIPPLE_DURATION_MS);
-  const ease = 1 - Math.pow(1 - t, 3);
-  const scale = 0.1 + ease * 2.1;
-  return (size * scale) / 2;
 }

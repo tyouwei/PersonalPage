@@ -1,11 +1,14 @@
-import Link from "next/link";
 import RippleCharText from "../effects/ripple-char-text";
+import SectionFooterWithRipple from "../effects/section-footer-with-ripple";
 
 const PORTFOLIO_TEXT = [
-  "I’m a Software Engineer focused on Mobile Native Infrastructure at Shopee, where I work on foundations and internal librariesthat help product teams ship faster and more reliably.",
+  "I’m a Software Engineer focused on Mobile Native Infrastructure at Shopee, where I work on foundations and internal libraries to help product teams in Shopee ship faster and more reliably.",
   "I enjoy keeping up with software trends and turning useful ideas into practical systems.",
-  "A big part of my work is building internal tooling and automation that improves developer experience, reduces repetitive work, and increases delivery confidence.",
-  "My interests include platform engineering, build and release workflows, observability, performance, and creating tools that scale with growing teams.",
+  "A big part of my work involves building internal tooling and automation that improves developer experience and increases delivery confidence.",
+  "Specifically, I architect libraries and endpoints that bridge low-level native OS capabilities with React Native, ensuring high-level frameworks remain performant and deeply integrated.",
+  "I also develop native iOS features built for massive scale and optimal performance, whilst adhering to industry-standard release cycle practices such as greyscale releasing and A/B testing.",
+  "Outside of work, I experiment with agentic AI architecture, focusing on how tool-calling and autonomous frameworks can extend LLM capabilities.",
+  "Whether it's mobile infra or AI agents, I’m driven by the challenge of turning complex ideas into practical, reliable systems!"
 ].join(" ");
 
 const PORTFOLIO_NOTE = [
@@ -35,25 +38,20 @@ export default function Intro() {
             text={PORTFOLIO_TEXT}
             className="text-sm leading-relaxed text-zinc-700"
           />
+          <br />
           <RippleCharText
             text={PORTFOLIO_NOTE}
             className="text-sm leading-relaxed text-zinc-700"
           />
         </div>
 
-        <div className="flex flex-wrap gap-3 pt-2">
+        <SectionFooterWithRipple className="pt-2">
           <a
-            href="#career"
+            href="#skills"
             className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
           >
-            View Career
+            Technical skills
           </a>
-          <Link
-            href="mailto:you@example.com"
-            className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
-          >
-            Contact
-          </Link>
           <a
             href="https://github.com/"
             target="_blank"
@@ -70,7 +68,7 @@ export default function Intro() {
           >
             LinkedIn
           </a>
-        </div>
+        </SectionFooterWithRipple>
       </div>
     </section>
   );

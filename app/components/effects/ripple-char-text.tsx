@@ -43,6 +43,29 @@ function inverseLerp(min: number, max: number, value: number) {
   return (value - min) / (max - min);
 }
 
+function nearestScrollableAncestors(start: HTMLElement | null): HTMLElement[] {
+  const seen = new Set<HTMLElement>();
+  const out: HTMLElement[] = [];
+  let node: HTMLElement | null = start?.parentElement ?? null;
+  while (node) {
+    const style = getComputedStyle(node);
+    const oy = style.overflowY;
+    const ox = style.overflowX;
+    const scrollableY =
+      (oy === "auto" || oy === "scroll" || oy === "overlay") && node.scrollHeight > node.clientHeight;
+    const scrollableX =
+      (ox === "auto" || ox === "scroll" || ox === "overlay") && node.scrollWidth > node.clientWidth;
+    if (scrollableY || scrollableX) {
+      if (!seen.has(node)) {
+        seen.add(node);
+        out.push(node);
+      }
+    }
+    node = node.parentElement;
+  }
+  return out;
+}
+
 type Props = {
   text: string;
   className?: string;
@@ -53,7 +76,7 @@ type Props = {
  * exponential interpolation so words ease back after ripples end (no snap).
  */
 export default function RippleCharText({ text, className = "" }: Props) {
-  const { gradientAt, surfaceHeightAt, physics } = useRippleContext();
+  const { gradientAt, surfaceHeightAt, physics, rippleEffectEnabled } = useRippleContext();
   const tokens = useMemo(() => splitWordTokens(text), [text]);
   const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const statesRef = useRef<WordState[]>([]);
@@ -93,6 +116,13 @@ export default function RippleCharText({ text, className = "" }: Props) {
       return;
     }
 
+    if (!rippleEffectEnabled) {
+      for (const el of wordRefs.current) {
+        if (el) el.style.transform = "";
+      }
+      return;
+    }
+
     const measureOrigins = () => {
       const words = wordRefs.current;
       const states = statesRef.current;
@@ -126,6 +156,17 @@ export default function RippleCharText({ text, className = "" }: Props) {
       }
     }
     window.addEventListener("resize", measureOrigins);
+
+    const scrollRoots = new Set<HTMLElement>();
+    for (const el of wordRefs.current) {
+      if (!el) continue;
+      for (const root of nearestScrollableAncestors(el)) {
+        scrollRoots.add(root);
+      }
+    }
+    for (const root of scrollRoots) {
+      root.addEventListener("scroll", measureOrigins, { passive: true });
+    }
 
     const rafRef = { id: 0 as number };
     const lastTimeRef = { value: 0 };
@@ -200,9 +241,12 @@ export default function RippleCharText({ text, className = "" }: Props) {
     return () => {
       cancelAnimationFrame(rafRef.id);
       window.removeEventListener("resize", measureOrigins);
+      for (const root of scrollRoots) {
+        root.removeEventListener("scroll", measureOrigins);
+      }
       if (ro) ro.disconnect();
     };
-  }, [wordCount, gradientAt, surfaceHeightAt, physics]);
+  }, [wordCount, gradientAt, surfaceHeightAt, physics, rippleEffectEnabled]);
 
   return (
     <>
